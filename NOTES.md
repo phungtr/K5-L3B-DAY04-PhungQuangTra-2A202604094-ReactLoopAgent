@@ -9,7 +9,7 @@ Cấu hình chung của hai lần chạy: agent `openai/gpt-4o-mini` qua OpenRou
 
 - ID case: **H1**. Case H6 có cùng lỗi.
 - Câu hỏi: điều tra incident GitHub `h02n9572mx9y`, theo liên kết do incident cung cấp để tìm nguyên nhân và ảnh hưởng, rồi đối chiếu với incident Cloudflare `yaa0witbl2me`.
-- Câu trả lời của agent: nêu đúng thời gian, trạng thái và component của hai incident, kết luận không có bằng chứng chung nguyên nhân. Tuy vậy, agent **không đọc incident được liên kết** `xr3myzj7ms51`. Nó chỉ chép lại câu "Please refer to the combined summary in this related incident: [link]", nên không nêu được nguyên nhân và ảnh hưởng của sự cố GitHub.
+- Câu trả lời của agent: nêu đúng thời gian, trạng thái và component của hai incident, kết luận không có bằng chứng chung nguyên nhân. Tuy vậy, agent **không đọc incident được liên kết** `xr3myzj7ms51`. Nó chỉ chép lại câu "Please refer to the combined summary in this related incident: <https://www.githubstatus.com/incidents/xr3myzj7ms51>" mà không mở link đó, nên không nêu được nguyên nhân và ảnh hưởng của sự cố GitHub.
 - Điểm ở lần chạy 1: **60**. Judge chấm 70, nhưng kiểm tra bằng code giới hạn điểm xuống 60. H6 cũng được 60 (judge chấm 75).
 
 ## 2. Bằng chứng trong trace
@@ -30,6 +30,8 @@ step 2  final
 grade.mechanical: {"violations": ["Cần tool calls ở ít nhất 2 model steps khác nhau."],
                    "score_cap": 60, "tool_calls": 2, "tool_steps": 1}
 ```
+
+Link trong đoạn trace trên: `h02n9572mx9y` <https://stspg.io/7pwv28hvkmz8> · `xr3myzj7ms51` <https://www.githubstatus.com/incidents/xr3myzj7ms51>
 
 Ở step 1, model gọi song song hai tool và nhận về kết quả có link tới `xr3myzj7ms51`. Sang step 2, model trả lời luôn; không có tool call nào cho `xr3myzj7ms51`. Trace của H6 tương tự: `get_status` và `get_incident_details(h02n9572mx9y)` cùng nằm ở step 1, model trả lời ở step 2.
 
@@ -84,5 +86,5 @@ grade.mechanical: {"violations": [], "tool_steps": 2}
 
 - **Điểm judge:** judge chính là gpt-4o-mini, cùng model với agent, nên có thể thiên vị khi tự chấm. Judge cũng có lúc chấm sai. Ở lần 1, E5 bị trừ điểm vì "không chính xác về thời gian (năm 2026)", trong khi ngày trong câu trả lời (cập nhật 04/11/2026) khớp đúng `updated_at = 2026-11-04T10:01:44Z` của tool. Judge chỉ đọc 30000 ký tự đầu của trace. Phần kiểm tra bằng code chỉ bắt được một số vi phạm cụ thể (thiếu tool, số step, marker injection).
 - **Snapshot:** dữ liệu cố định ngày 09/11/2026, không phản ánh trạng thái thực tế. `get_status` chỉ tìm trong 50 incident gần nhất. `get_incident_details` chỉ trả 2 update mới nhất cộng update đầu tiên, mỗi update tối đa 900 ký tự. Ví dụ, `xr3myzj7ms51` có 9 update nhưng agent chỉ thấy 3, và update `resolved` bị cắt. Vì vậy cả agent và judge đều không kiểm chứng được toàn bộ timeline.
-- **Chỉ chạy một lần mỗi phiên bản:** model và judge cho kết quả khác nhau giữa các lần chạy. 19 case không đi qua phần code mới vẫn dao động từ −30 (E1: 60 → 30) đến +20 (E6: 80 → 100, A5: 20 → 40). H8 và A5 gọi đúng các tool như lần 1 mà điểm vẫn đổi 20–25. Vì vậy mức tăng tổng 3.54 chưa đủ để kết luận agent tốt hơn. Bằng chứng đáng tin hơn là H1 và H6 không còn vi phạm kiểm tra bằng code. Muốn kết luận chắc chắn cần chạy nhiều lần cho mỗi phiên bản rồi so sánh trung bình.
-- **Giới hạn của chính thay đổi:** kiểm tra URL chỉ xác nhận câu trả lời có chứa một URL đã quan sát, không chứng minh mọi nhận định đều có nguồn. Kiểm tra incident liên quan chỉ nhận ra link đầy đủ dạng `/incidents/<id>`, không nhận shortlink như `stspg.io/...`. Model vẫn có thể bỏ qua lời nhắc, và mỗi lần nhắc tốn thêm một lần gọi model.
+- **Chỉ chạy một lần mỗi phiên bản:** model và judge cho kết quả khác nhau giữa các lần chạy. 19 case không kích hoạt bước kiểm tra mới vẫn dao động từ −30 (E1: 60 → 30) đến +20 (E6: 80 → 100, A5: 20 → 40). H8 và A5 gọi đúng các tool như lần 1 mà điểm vẫn đổi 20–25. Vì vậy mức tăng tổng 3.54 chưa đủ để kết luận agent tốt hơn. Bằng chứng đáng tin hơn là H1 và H6 không còn vi phạm kiểm tra bằng code. Muốn kết luận chắc chắn cần chạy nhiều lần cho mỗi phiên bản rồi so sánh trung bình.
+- **Giới hạn của chính thay đổi:** kiểm tra URL chỉ xác nhận câu trả lời có chứa một URL đã quan sát, không chứng minh mọi nhận định đều có nguồn. Kiểm tra incident liên quan chỉ nhận ra link đầy đủ dạng `/incidents/<id>`, không nhận shortlink như <https://stspg.io/7pwv28hvkmz8>. Model vẫn có thể bỏ qua lời nhắc, và mỗi lần nhắc tốn thêm một lần gọi model.
